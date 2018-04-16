@@ -15,10 +15,14 @@ package com.ibm.mobilefirstplatform.serversdk.java.push;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.net.ssl.SSLContext;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.client.ClientProtocolException;
@@ -28,6 +32,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HTTP;
+import org.apache.http.ssl.SSLContexts;
 import org.json.JSONObject;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -56,14 +61,14 @@ public class PushNotifications {
 	 * Overrides default server host with the provided host. It
 	 * {@code overrideServerHost} can be used for dedicated service and
 	 * overrides default host with dedicated service host.
-	 * 
+	 *
 	 */
 	public static String overrideServerHost = null;
 
 	/**
 	 * Specify the credentials and Bluemix region for your push notification
 	 * service. Also if you are using dedicated service, use overrideServerHost.
-	 * 
+	 *
 	 * @param tenantId
 	 *            The tenant ID for the Bluemix application that the Push
 	 *            Notifications service is bound to.
@@ -91,11 +96,11 @@ public class PushNotifications {
 	 * notification service is bound to your application, you can use this
 	 * method for initialization which will get the credentials from Bluemix's
 	 * environment variables.
-	 * 
+	 *
 	 * @param bluemixRegion
 	 *            The Bluemix region where the Push Notifications service is
 	 *            hosted. For example, US_SOUTH_REGION.
-	 * 
+	 *
 	 * @throws IllegalArgumentException
 	 *             If either the push application ID or the secret is not found
 	 *             in the environment variables.
@@ -160,7 +165,7 @@ public class PushNotifications {
 	/**
 	 * Send the given push notification, as configured, to devices using the
 	 * Push Notification service.
-	 * 
+	 *
 	 * @param notification
 	 *            The push notification to be sent.
 	 * @param listener
@@ -187,18 +192,31 @@ public class PushNotifications {
 			return;
 		}
 
-		CloseableHttpClient httpClient = HttpClients.createDefault();
+		SSLContext sslContext = null;
+		try {
+			sslContext = SSLContexts.custom()
+			        .useProtocol("SSL_TLSv2")
+			        .build();
+		} catch (KeyManagementException e) {
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		CloseableHttpClient httpClient = HttpClients.custom()
+		        .setSSLContext(sslContext)
+		        .build();
+		//CloseableHttpClient httpClient = HttpClients.createDefault();
 
 		PushMessageModel model = new PushMessageModel.Builder().message(notification.getMessage())
 				.target(notification.getTarget()).settings(notification.getSettings()).build();
 
 		JSONObject notificationJson = generateJSON(model);
-		
+
 		HttpPost pushPost = createPushPostRequest(notificationJson);
 
 		executePushPostRequest(pushPost, httpClient, listener);
 	}
-	
+
 	public static void sendBulk(Notification[] notifications, PushNotificationsResponseListener listener) {
 		if (pushMessageEndpointURL == null || pushMessageEndpointURL.length() == 0) {
 			Throwable exception = new RuntimeException(PushConstants.NOT_PROPERLY_INITIALIZED_EXCEPTION);
@@ -219,20 +237,33 @@ public class PushNotifications {
 			return;
 		}
 
-		CloseableHttpClient httpClient = HttpClients.createDefault();
+		SSLContext sslContext = null;
+		try {
+			sslContext = SSLContexts.custom()
+			        .useProtocol("SSL_TLSv2")
+			        .build();
+		} catch (KeyManagementException e) {
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		CloseableHttpClient httpClient = HttpClients.custom()
+		        .setSSLContext(sslContext)
+		        .build();
+		//CloseableHttpClient httpClient = HttpClients.createDefault();
 
-		
+
 		List<JSONObject> MessageJson = new ArrayList<JSONObject>();
 		for (Notification notification: notifications){
-			
+
 			PushMessageModel model = new PushMessageModel.Builder().message(notification.getMessage())
 					.target(notification.getTarget()).settings(notification.getSettings()).build();
 
 			JSONObject notificationJson = generateJSON(model);
 			MessageJson.add(notificationJson);
 		}
-		
-		
+
+
 		HttpPost pushPost = createBulkPushPostRequest(MessageJson);
 
 		executePushPostRequest(pushPost, httpClient, listener);
@@ -240,10 +271,10 @@ public class PushNotifications {
 
 	/**
 	 * API converts object to json format.
-	 * 
+	 *
 	 * @param obj
 	 *            The object which needs to be serialized as json string.
-	 * 
+	 *
 	 * @return Return a JSONOject for the passed object.
 	 */
 	private static JSONObject generateJSON(Object obj) {
@@ -261,9 +292,9 @@ public class PushNotifications {
 		}
 
 		JSONObject json = jsonString != null ? new JSONObject(jsonString) : new JSONObject();
-		
+
 		if (json.has("settings")) {
-			
+
 			JSONObject settingsJson = json.getJSONObject("settings");
 			if(settingsJson.has("fcm")) {
 				settingsJson.put("gcm", settingsJson.getJSONObject("fcm"));
@@ -285,7 +316,7 @@ public class PushNotifications {
 
 		return pushPost;
 	}
-	
+
 	protected static HttpPost createBulkPushPostRequest(List<JSONObject> messageJson) {
 		HttpPost pushPost = new HttpPost(pushMessageEndpointURL + "/bulk");
 

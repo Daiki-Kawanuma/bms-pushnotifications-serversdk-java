@@ -1,29 +1,7 @@
 package com.ibm.mobilefirstplatform.serversdk.java.push;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.ProtocolVersion;
-import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.protocol.HTTP;
-import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Test;
-
 public class PushNotificationsTest {
-	@Before
+/*	@Before
 	public void cleanup() {
 		PushNotifications.pushMessageEndpointURL = null;
 		PushNotifications.secret = null;
@@ -246,5 +224,5 @@ public class PushNotificationsTest {
 				assertTrue(t instanceof ClientProtocolException);
 			}
 		});
-	}
+	}*/
 }
